@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 import sys
+from datetime import datetime
 from serial import Serial
 from daemon import Daemon
-from server import db, Count
+from server import db, Count, Leg, Cast
 
 class Updater(Daemon):
     def __init__(self, *args, **kwargs):
@@ -21,6 +22,14 @@ class Updater(Daemon):
                 self.a += a
                 self.b += b
                 db.session.add(Count(a=self.a, b=self.b))
+                cast = Cast.current_cast()
+                if cast:
+                    if cast.dt_start <= datetime.utcnow():
+                        cast.pulses = Cast.pulses + self.a
+                leg = Leg.current_leg()
+                if leg:
+                    if leg.dt_start <= datetime.utcnow():
+                        leg.pulses = Leg.pulses + self.a
                 db.session.commit()
                 self.a = 0
                 self.b = 0
