@@ -4,12 +4,13 @@ from flask import Flask, request, render_template, redirect, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.sql import func
 from sqlalchemy import update
+from sqlalchemy.ext.declarative import declarative_base
 import flask_restless
 
 DIY_MINUTES = 2
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@localhost/rallye'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.225/rallye'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -17,8 +18,8 @@ db = SQLAlchemy(app)
 class Calibration(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     pulses = db.Column(db.Integer, default=360000)
-    miles = db.Column(db.Float, default = 1.0)
-    
+    miles = db.Column(db.Float, default=1.0)
+
     @staticmethod
     def ppm():
         c = db.session.query(Calibration).get(1)
@@ -59,6 +60,10 @@ class Leg(db.Model):
     nexts = db.relationship('Leg')
     casts = db.relationship('Cast')
     pulses = db.Column(db.Integer, nullable=False, default=0)
+    transit = db.Column(db.Integer, nullable=True)
+
+    def as_dict(self):
+        return {name: getattr(self, name) for name in ([c.name for c in self.__table__.columns] + ['distance', 'perfect', 'current'])}
 
     @property
     def distance(self):
@@ -66,11 +71,11 @@ class Leg(db.Model):
 
     @property
     def perfect(self):
-        return sum([c.perfect for c in self.casts])
+        return sum([c.perfect for c in self.casts]) + (self.transit or 0)
 
     @property
     def current(self):
-        return ((self.dt_end or datetime.utcnow()) - self.dt_start).total_seconds()
+        return ((self.time_in or datetime.utcnow()) - self.time_out).total_seconds()
 
     @staticmethod
     def current_leg():
@@ -87,6 +92,9 @@ class Cast(db.Model):
     nexts = db.relationship('Cast')
     pulses = db.Column(db.Integer, nullable=False, default=0)
 
+    def as_dict(self):
+        return {name: getattr(self, name) for name in ([c.name for c in self.__table__.columns] + ['distance', 'perfect', 'current', 'speed', 'current_speed', 'start'])}
+
     @property
     def perfect(self):
         """
@@ -96,7 +104,7 @@ class Cast(db.Model):
 
     @property
     def current(self):
-        return ((self.dt_end or datetime.utcnow()) - self.dt_start).total_seconds()
+        return ((self.dt_end or datetime.utcnow()) - self.start).total_seconds()
 
     @property
     def distance(self):
@@ -104,11 +112,22 @@ class Cast(db.Model):
 
     @property
     def speed(self):
+        if not self.current:
+            return 0.0
         return self.distance * 3600.0 / self.current
 
     @property
     def current_speed(self):
         return Count.current_speed()
+
+
+    @property
+    def start(self):
+        return max(self.dt_start, self.leg.time_out)
+
+    @property
+    def leg(self):
+        return db.session.query(Leg).get(self.leg_id)
 
     @staticmethod
     def current_cast():
@@ -117,10 +136,12 @@ class Cast(db.Model):
 
     @staticmethod
     def new(speed):
-        now = datetime.utcnow() 
+        now = datetime.utcnow()
+        new = Cast(cast=speed, leg_id=Leg.current_leg().id, dt_start=now)
         old = Cast.current_cast()
-        old.dt_end = now
-        new = Cast(cast=speed, leg_id=Leg.current_leg().id, dt_start=now, prev_id=old.id)
+        if old:
+            old.dt_end = now
+            new.prev_id = old.id
         db.session.add(new)
         db.session.commit()
         db.session.refresh(new)
@@ -139,8 +160,14 @@ manager.create_api(Calibration, methods=['GET', 'PUT'])
 
 # Views
 @app.route('/update')
-def update():
-    return ''
+def update_data():
+    leg = Leg.current_leg()
+    if leg:
+        leg = leg.as_dict()
+    cast = Cast.current_cast()
+    if cast:
+        cast = cast.as_dict()
+    return json.dumps({'leg': leg, 'cast': cast}, default=str), 200, {'Content-Type': 'application/json'}
 
 @app.route('/new_cast', methods=['POST'])
 def new_cast():
@@ -151,7 +178,7 @@ def new_cast():
 def new_leg():
     time_out = request.json['time_out'] or datetime.utcnow()
     cast = request.json['cast']
-    leg = Leg(dt_start=time_out)
+    leg = Leg(dt_start=datetime.utcnow(), time_out=time_out)
     db.session.add(leg)
     db.session.commit()
     db.session.refresh(leg)
@@ -177,19 +204,17 @@ def diy_checkpoint():
     now = datetime.utcnow()
     leg = Leg.current_leg()
     leg.dt_end = now
-    leg.time_in = leg.dt_start + timedelta(seconds=leg.perfect)
+    leg.time_in = leg.time_out + timedelta(seconds=leg.perfect)
     cast = Cast.current_cast()
     if cast:
         cast.dt_end = leg.dt_end
-    time_out = leg.dt_end + timedelta(seconds=DIY_MINUTES * 60)
-    new_leg = Leg(dt_start=time_out)
+    time_out = leg.time_in + timedelta(seconds=DIY_MINUTES * 60)
+    new_leg = Leg(dt_start=datetime.utcnow(), time_out=time_out)
     db.session.add(new_leg)
     db.session.commit()
     db.session.refresh(new_leg)
-    cast = Cast(dt_start=time_out, cast=30, leg_id=new_leg.id)
-    db.session.add(cast)
     db.session.commit()
-    return json.dumps({'time_in': leg.dt_end, 'time_out': time_out}, default=str), 200, {'Content-Type': 'application/json'}
+    return json.dumps({'time_in': leg.time_in, 'time_out': time_out}, default=str), 200, {'Content-Type': 'application/json'}
 
 @app.route('/leg/current')
 def current_leg():

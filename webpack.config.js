@@ -1,4 +1,5 @@
 const path = require('path');
+const webpack = require('webpack');
 const VueLoaderPlugin = require('vue-loader/lib/plugin');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 const HardSourceWebpackPlugin = require('hard-source-webpack-plugin');
@@ -43,6 +44,7 @@ module.exports = {
         new VueLoaderPlugin(),
         new UglifyJsPlugin(),
         new HardSourceWebpackPlugin(),
+        new webpack.optimize.SplitChunksPlugin(),
     ]
 }
 

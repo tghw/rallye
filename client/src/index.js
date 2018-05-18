@@ -1,6 +1,8 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import VueResource from 'vue-resource'
+import VueMoment from 'vue-moment';
+import MomentTZ from 'moment-timezone';
 import BootstrapVue from "bootstrap-vue";
 
 // CSS
@@ -11,6 +13,7 @@ import Dashboard from './dashboard.vue'
  
 Vue.use(VueRouter);
 Vue.use(VueResource);
+Vue.use(VueMoment, {MomentTZ});
 Vue.use(BootstrapVue);
 
 var router = new VueRouter({
@@ -25,4 +28,3 @@ const app = new Vue({
   el: '#app',
   router: router,
 });
-
