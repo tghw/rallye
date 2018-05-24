@@ -10,7 +10,7 @@ import flask_restless
 DIY_MINUTES = 2
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.225/rallye'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.126/rallye'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -147,6 +147,45 @@ class Cast(db.Model):
         db.session.refresh(new)
         return new
 
+class Error(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    dt = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    leg_id = db.Column(db.Integer, db.ForeignKey('leg.id'))
+    corrected = db.Column(db.Boolean, nullable=False, default=False)
+    distance = db.Column(db.Integer, nullable=False, default=0)
+    turn_around = db.Column(db.DateTime, nullable=True)
+    on_course = db.Column(db.DateTime, nullable=True)
+
+    def back_on_course(self):
+        self.on_course = datetime.utcnow()
+        self.distance = db.session.query(func.sum(Count.a)).filter(Count.dt > self.turn_around, Count.dt < self.on_course).first()[0] * 2
+        db.session.commit()
+        self.correct()
+
+    def correct(self):
+        leg = Leg.current_leg()
+        cast = Cast.current_cast()
+        distance = self.distance
+        while distance > 0 and cast:
+            to_remove = min(distance, cast.pulses)
+            cast.pulses -= to_remove
+            if leg:
+                leg.pulses -= to_remove
+            distance -= to_remove
+            if cast.prev_id:
+                cast = db.session.query(Cast).get(cast.prev_id)
+            else:
+                cast = None
+        self.corrected = True
+        db.session.commit()
+
+    def as_dict(self):
+        return {name: getattr(self, name) for name in ([c.name for c in self.__table__.columns] + [])}
+
+    @staticmethod
+    def current_error():
+        return db.session.query(Error).filter(Error.turn_around != None, Error.on_course == None).order_by(Error.dt.desc()).first()
+
 db.create_all()
 calibration = db.session.query(Calibration).filter(Calibration.id == 1).first()
 if not calibration:
@@ -156,6 +195,7 @@ db.session.commit()
 manager = flask_restless.APIManager(app, flask_sqlalchemy_db=db)
 manager.create_api(Leg, methods=['GET', 'POST', 'PUT', 'DELETE'], include_methods=['distance', 'perfect', 'current'])
 manager.create_api(Cast, methods=['GET', 'POST', 'PUT', 'DELETE'], include_methods=['perfect', 'current', 'distance', 'speed', 'current_speed',])
+manager.create_api(Error, methods=['GET', 'POST', 'PUT'])
 manager.create_api(Calibration, methods=['GET', 'PUT'])
 
 # Views
@@ -167,7 +207,10 @@ def update_data():
     cast = Cast.current_cast()
     if cast:
         cast = cast.as_dict()
-    return json.dumps({'leg': leg, 'cast': cast}, default=str), 200, {'Content-Type': 'application/json'}
+    error = Error.current_error()
+    if error:
+        error = error.as_dict()
+    return json.dumps({'leg': leg, 'cast': cast, 'error': error}, default=str), 200, {'Content-Type': 'application/json'}
 
 @app.route('/new_cast', methods=['POST'])
 def new_cast():
@@ -182,10 +225,37 @@ def new_leg():
     db.session.add(leg)
     db.session.commit()
     db.session.refresh(leg)
-    cast = Cast(dt_start=time_out, cast=cast, leg_id=leg.id)
-    db.session.add(cast)
+    if cast:
+        cast = Cast(dt_start=time_out, cast=cast, leg_id=leg.id)
+        db.session.add(cast)
     db.session.commit()
     return redirect('/api/leg/%d' % leg.id)
+
+
+@app.route('/error/manual', methods=['POST'])
+def manual_error():
+    distance = request.json['distance']
+    pulses = distance * Calibration.ppm()
+    error = Error(distance=pulses)
+    db.session.add(error)
+    db.session.commit()
+    error.correct()
+    return 'OK'
+
+@app.route('/error/turnaround', methods=['POST'])
+def turn_around_error():
+    error = Error(turn_around=datetime.utcnow())
+    db.session.add(error)
+    db.session.commit()
+    return json.dumps({'error': error.as_dict()}, default=str), 200, {'Content-Type': 'application/json'}
+
+@app.route('/error/oncourse', methods=['POST'])
+def on_course_error():
+    error = Error.current_error()
+    if not error:
+        return 'No Error', 400
+    error.back_on_course()
+    return 'OK'
 
 @app.route('/checkpoint', methods=['POST'])
 def checkpoint():
@@ -233,6 +303,15 @@ def current_cast():
 @app.route('/s/<path:path>')
 def static_files(path):
     return send_from_directory('client/dist', path)
+
+@app.route('/reset', methods=['POST'])
+def reset():
+    db.session.query(Count).delete()
+    db.session.query(Cast).delete()
+    db.session.query(Leg).delete()
+    db.session.query(Error).delete()
+    db.session.commit()
+    return 'OK'
 
 @app.route('/')
 def home():

@@ -75,7 +75,7 @@ h1.time {
                             Distance<br>{{num(cast.distance)}}
                         </div>
                         <div class="col">
-                            <button @click="error()" class="btn btn-default btn-lg btn-block">Error</button>
+                            <button @click="errorStart()" class="btn btn-default btn-lg btn-block">Error</button>
                         </div>
                     </div>
                     <div class="row" v-else>
@@ -144,6 +144,27 @@ h1.time {
             <b-col><b-button variant="default" :block="true" @click="pause(45)" :disabled="addingTime">45 Sec</b-button></b-col>
         </b-row>
     </b-modal>
+    <b-modal id="checkPointModal" ref="checkPointModal" title="Checkpoint" ok-only>
+        <div class="text-center">
+            <h3>Time Out</h3>
+            <p v-if="last_leg.time_out">{{dttot(last_leg.time_out)}}</p>
+            <p v-else>Calculating...</p>
+            <h3>Time In</h3>
+            <p v-if="last_leg.time_in">{{dttot(last_leg.time_in)}}</p>
+            <p v-else>Calculating...</p>
+            <h3>Elapsed</h3>
+            <p v-if="last_leg.current">{{stom(last_leg.current)}}</p>
+            <p v-else>Calculating...</p>
+            <h3>Perfect</h3>
+            <p v-if="last_leg.perfect">{{stom(last_leg.perfect)}}</p>
+            <p v-else>Calculating...</p>
+            <h3>Difference</h3>
+            <p v-if="last_leg.perfect">
+                <span :class="last_leg.current > last_leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(last_leg.current - last_leg.perfect)}}</span>
+            </p>
+            <p v-else>Calculating...</p>
+        </div>
+    </b-modal>
     <b-modal id="diyCheckPointModal" ref="diyCheckPointModal" title="DIY Checkpoint" ok-only>
         <div class="text-center">
             <h3>Time In (Perfect)</h3>
@@ -154,16 +175,19 @@ h1.time {
             <p v-else>Calculating...</p>
         </div>
     </b-modal>
-    <b-modal id="errorModal" ref="errorModal" title="Error">
+    <b-modal id="errorModal" ref="errorModal" title="Error" hide-footer>
+        <b>Automatic Correction</b>
         <b-row>
             <b-col>
                 <b-button variant="default" size="lg" block @click="errorOnCourse" v-if="error">On Course</b-button>
                 <b-button variant="default" size="lg" block @click="errorTurnAround" v-else>Turn Around</b-button>
             </b-col>
         </b-row>
-        <h3>Manual Correction</h3>
+        <b class="mt-3">Manual Correction</b>
         <b-row>
             <b-col>
+            Distance (Miles)<br><b-form-input type="number" class="mb-1" ref="errorMiles" />
+            <b-button :block="true" variant="default" @click="errorManualDistance">Submit</b-button>
             </b-col>
         </b-row>
     </b-modal>
@@ -177,10 +201,12 @@ export default {
     data() {
         return {
             leg: {},
+            last_leg: {},
             cast: {},
             time: new Date(),
             addingTime: false,
             diy: {},
+            error: null,
         };
     },
     computed: {
@@ -216,11 +242,14 @@ export default {
             this.$http.get('/update').then((resp) => {
                 this.leg = resp.body.leg;
                 this.cast = resp.body.cast;
+                this.error = resp.body.error;
             });
         },
         checkpoint() {
+            this.last_leg = {};
+            this.$refs.checkPointModal.show();
             this.$http.post('/checkpoint').then((resp) => {
-                var leg = resp.body;
+                this.last_leg = resp.body;
             });
         },
         diy_checkpoint() {
@@ -233,6 +262,7 @@ export default {
         start_leg() {
             var out_str = this.$refs.start_time_out.value;
             var time_out = this.parseTimeOut(out_str);
+            if (!time_out) time_out = this.$moment(new Date());
             var cast = parseFloat(this.$refs.start_cast.value);
             this.$http.post('/new_leg', JSON.stringify({time_out: time_out.format(), cast: cast})).then(this.update);
         },
@@ -297,7 +327,21 @@ export default {
             else if (hide) {
                     this.$refs.addTimeModal.hide();
             }
-        }
+        },
+        errorStart() {
+            this.$refs.errorModal.show();
+        },
+        errorTurnAround() {
+            this.$http.post('/error/turnaround');
+        },
+        errorOnCourse() {
+            this.$http.post('/error/oncourse');
+            this.$refs.errorModal.hide();
+        },
+        errorManualDistance() {
+            this.$http.post('/error/manual', JSON.stringify({'distance': parseFloat(this.$refs.errorMiles.localValue)}));
+            this.$refs.errorModal.hide();
+        },
     },
     mounted() {
         this.update();
