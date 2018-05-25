@@ -18,7 +18,7 @@ class Updater(Daemon):
             try:
                 print('Is active: %s' % db.session.is_active)
                 line = self.usb.readline().strip()
-                a, b = (int(x) for x in line.split(b'|'))
+                b, a = (int(x) for x in line.split(b'|'))
                 self.a += a
                 self.b += b
                 db.session.add(Count(a=self.a, b=self.b))

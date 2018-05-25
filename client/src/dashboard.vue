@@ -9,6 +9,7 @@ h1.time {
     <br>
     <h1 class="text-right time">
     {{dttot(time)}}
+    <b-button variant="default" v-b-modal.settingsModal>&#x2699;</b-button>
     </h1>
     <div class="card">
         <div class="card-header"><h2>Current Leg</h2></div>
@@ -30,13 +31,13 @@ h1.time {
                     Time Out<br>{{dttot(leg.time_out)}}<br><b-button v-b-modal.editTimeOutModal variant="link">Edit</b-button>
                 </div>
                 <div class="col">
-                    <button @click="checkpoint()" class="btn btn-default btn-lg btn-block">&#10003;&bull;</button>
+                    <b-button @click="checkpoint()" block size="lg" variant="primary">&#10003;&bull;</b-button>
                 </div>
                 <div class="col">
-                    <button @click="diy_checkpoint()" class="btn btn-default btn-lg btn-block">DIY &#10003;&bull;</button>
+                    <b-button @click="diy_checkpoint()" size="lg" variant="success">DIY &#10003;&bull;</b-button>
                 </div>
                 <div class="col">
-                    <b-button variant="default" :block="true" size="lg" v-b-modal.addTimeModal>+ Time</b-button>
+                    <b-button variant="default" block size="lg" v-b-modal.addTimeModal>+ Time</b-button>
                 </div>
             </div>
             <div class="row" v-else>
@@ -47,7 +48,7 @@ h1.time {
                     <input type="number" class="form-control" ref="start_cast" placeholder="Starting CAST">
                 </div>
                 <div class="col">
-                    <button @click="start_leg()" class="btn btn-default btn-block">Start New Leg</button>
+                    <b-button @click="start_leg()" block variant="primary">Start New Leg</b-button>
                 </div>
                 <div class="col"></div>
             </div>
@@ -75,7 +76,7 @@ h1.time {
                             Distance<br>{{num(cast.distance)}}
                         </div>
                         <div class="col">
-                            <button @click="errorStart()" class="btn btn-default btn-lg btn-block">Error</button>
+                            <b-button @click="errorStart()" variant="danger" block>Error</b-button>
                         </div>
                     </div>
                     <div class="row" v-else>
@@ -100,10 +101,10 @@ h1.time {
                             <input class="form-control" type="number" placeholder="CAST" ref="cast1">
                         </div>
                         <div class="col">
-                            <button @click="next_cast()" class="btn btn-default btn-block">Go</button>
+                            <b-button @click="next_cast()" variant="primary" block>Go</b-button>
                         </div>
                         <div class="col">
-                            <button @click="skip_cast()" class="btn btn-default btn-block">Skip</button>
+                            <b-button @click="skip_cast()" variant="default" block>Skip</b-button>
                         </div>
                     </div>
                     <br>
@@ -133,15 +134,15 @@ h1.time {
         <b-form-input type="number" placeholder="Time (mins)" ref="addTime" autofocus="autofocus" />
         <br>
         <b-row>
-            <b-col><b-button variant="default" :block="true" @click="pause(5)" :disabled="addingTime">5 Sec</b-button></b-col>
-            <b-col><b-button variant="default" :block="true" @click="pause(10)" :disabled="addingTime">10 Sec</b-button></b-col>
-            <b-col><b-button variant="default" :block="true" @click="pause(15)" :disabled="addingTime">15 Sec</b-button></b-col>
+            <b-col><b-button variant="default" block @click="pause(5)" :disabled="addingTime">5 Sec</b-button></b-col>
+            <b-col><b-button variant="default" block @click="pause(10)" :disabled="addingTime">10 Sec</b-button></b-col>
+            <b-col><b-button variant="default" block @click="pause(15)" :disabled="addingTime">15 Sec</b-button></b-col>
         </b-row>
         <br>
         <b-row>
-            <b-col><b-button variant="default" :block="true" @click="pause(20)" :disabled="addingTime">20 Sec</b-button></b-col>
-            <b-col><b-button variant="default" :block="true" @click="pause(30)" :disabled="addingTime">30 Sec</b-button></b-col>
-            <b-col><b-button variant="default" :block="true" @click="pause(45)" :disabled="addingTime">45 Sec</b-button></b-col>
+            <b-col><b-button variant="default" block @click="pause(20)" :disabled="addingTime">20 Sec</b-button></b-col>
+            <b-col><b-button variant="default" block @click="pause(30)" :disabled="addingTime">30 Sec</b-button></b-col>
+            <b-col><b-button variant="default" block @click="pause(45)" :disabled="addingTime">45 Sec</b-button></b-col>
         </b-row>
     </b-modal>
     <b-modal id="checkPointModal" ref="checkPointModal" title="Checkpoint" ok-only>
@@ -163,6 +164,9 @@ h1.time {
                 <span :class="last_leg.current > last_leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(last_leg.current - last_leg.perfect)}}</span>
             </p>
             <p v-else>Calculating...</p>
+            <p>
+                <b-button variant="default" v-b-modal.calibrateModal>Calibrate</b-button>
+            </p>
         </div>
     </b-modal>
     <b-modal id="diyCheckPointModal" ref="diyCheckPointModal" title="DIY Checkpoint" ok-only>
@@ -179,17 +183,42 @@ h1.time {
         <b>Automatic Correction</b>
         <b-row>
             <b-col>
-                <b-button variant="default" size="lg" block @click="errorOnCourse" v-if="error">On Course</b-button>
-                <b-button variant="default" size="lg" block @click="errorTurnAround" v-else>Turn Around</b-button>
+                <b-button variant="success" size="lg" block @click="errorOnCourse" v-if="error">On Course</b-button>
+                <b-button variant="danger" size="lg" block @click="errorTurnAround" v-else>Turn Around</b-button>
             </b-col>
         </b-row>
         <b class="mt-3">Manual Correction</b>
         <b-row>
             <b-col>
             Distance (Miles)<br><b-form-input type="number" class="mb-1" ref="errorMiles" />
-            <b-button :block="true" variant="default" @click="errorManualDistance">Submit</b-button>
+            <b-button block variant="warning" @click="errorManualDistance">Submit</b-button>
             </b-col>
         </b-row>
+    </b-modal>
+    <b-modal id="calibrateModal" ref="calibrateModal" @ok="calibrate">
+        <h5>Measured</h5>
+        <p>
+            Miles: {{last_leg.distance}}
+            <br>
+            Pulses: {{last_leg.pulses}}
+            <br>
+            PPM: {{Math.round(last_leg.pulses / last_leg.distance)}}
+        </p>
+        <h5>Calibrated</h5>
+        <p>
+            Miles: <b-form-input ref="calibrationMiles" type="number" v-model="calibrationMiles" />
+            <br>
+            Pulses: {{last_leg.pulses}}
+            <br>
+            PPM: {{Math.round(last_leg.pulses / calibrationMiles)}}
+        </p>
+    </b-modal>
+    <b-modal id="settingsModal" ref="settingsModal" ok-only>
+        <b-button variant="primary" block v-b-modal.calibrateModal>Calibrate</b-button>
+        <b-button variant="danger" block v-b-modal.resetModal>Reset</b-button>
+    </b-modal>
+    <b-modal id="resetModal" ref="resetModal" @ok="reset" ok-title="Reset">
+        Are you sure you want to reset?
     </b-modal>
 </div>
 </template>
@@ -207,6 +236,9 @@ export default {
             addingTime: false,
             diy: {},
             error: null,
+            calibrationMiles: 0,
+            updateInterval: null,
+            timeInterval: null,
         };
     },
     computed: {
@@ -342,12 +374,30 @@ export default {
             this.$http.post('/error/manual', JSON.stringify({'distance': parseFloat(this.$refs.errorMiles.localValue)}));
             this.$refs.errorModal.hide();
         },
+        calibrate() {
+            var pulses = this.last_leg.pulses;
+            var miles = this.$refs.calibrationMiles.localValue;
+            this.$http.post('/calibrate', JSON.stringify({miles: miles, pulses: pulses}));
+        },
+        reset() {
+            this.$http.post('/reset');
+        },
     },
     mounted() {
         this.update();
-        setInterval(this.update, 1000);
-        setInterval(() => this.time = new Date(), 50);
+        this.updateInterval = setInterval(this.update, 1000);
+        this.timeInterval = setInterval(() => this.time = new Date(), 50);
         this.$moment.tz.setDefault('UTC');
+    },
+    beforeDestroy() {
+        if (this.updateInterval) {
+            cancelInterval(this.updateInterval);
+            this.updateInterval = null;
+        }
+        if (this.timeInterval) {
+            cancelInterval(this.timeInterval);
+            this.timeInterval = null;
+        }
     },
 };
 </script>

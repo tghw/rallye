@@ -300,6 +300,12 @@ def current_cast():
         return redirect('/api/cast/%d' % cast.id)
     return json.dumps(None), 200, {'Content-Type': 'application/json'}
 
+@app.route('/calibrate', methods=['POST'])
+def calibrate():
+    miles = request.json['miles']
+    pulses = request.json['pulses']
+    Calibration.update(pulses, miles)
+
 @app.route('/s/<path:path>')
 def static_files(path):
     return send_from_directory('client/dist', path)
