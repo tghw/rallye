@@ -98,8 +98,8 @@ export default {
         },
         update() {
             this.$http.get('/update').then((resp) => {
-                this.leg = resp.body.leg;
-                this.cast = resp.body.cast;
+                this.leg = resp.body.leg || {};
+                this.cast = resp.body.cast || {};
                 this.error = resp.body.error;
             });
         },
