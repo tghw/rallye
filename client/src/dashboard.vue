@@ -214,6 +214,7 @@ h1.time {
         </p>
     </b-modal>
     <b-modal id="settingsModal" ref="settingsModal" ok-only>
+        <router-link to="/driver" class="btn btn-success btn-block">Driver</router-link>
         <b-button variant="primary" block v-b-modal.calibrateModal>Calibrate</b-button>
         <b-button variant="danger" block v-b-modal.resetModal>Reset</b-button>
     </b-modal>
@@ -391,11 +392,11 @@ export default {
     },
     beforeDestroy() {
         if (this.updateInterval) {
-            cancelInterval(this.updateInterval);
+            clearInterval(this.updateInterval);
             this.updateInterval = null;
         }
         if (this.timeInterval) {
-            cancelInterval(this.timeInterval);
+            clearInterval(this.timeInterval);
             this.timeInterval = null;
         }
     },

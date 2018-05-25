@@ -319,6 +319,10 @@ def reset():
     db.session.commit()
     return 'OK'
 
+@app.route('/driver')
+def driver():
+    return render_template('index.html')
+
 @app.route('/')
 def home():
     return render_template('index.html')

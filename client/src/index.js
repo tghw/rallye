@@ -10,6 +10,7 @@ import "bootstrap/dist/css/bootstrap.css"
 import "bootstrap-vue/dist/bootstrap-vue.css"
 
 import Dashboard from './dashboard.vue'
+import Driver from './driver.vue'
  
 Vue.use(VueRouter);
 Vue.use(VueResource);
@@ -21,6 +22,7 @@ var router = new VueRouter({
   history: true,
   routes: [
     { path: '/', component: Dashboard },
+    { path: '/driver', component: Driver },
   ]
 });
 
