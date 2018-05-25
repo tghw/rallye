@@ -11,6 +11,7 @@ DIY_MINUTES = 2
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.126/rallye'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@localhost/rallye'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -326,6 +327,8 @@ def driver():
 @app.route('/')
 def home():
     return render_template('index.html')
+
+application = app
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', threaded=True)
