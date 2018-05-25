@@ -2,10 +2,13 @@
 h1.time {
     font-family: monospace;
 }
+.big {
+    font-size: 2em;
+}
 </style>
 
 <template>
-<div>
+<div class="big">
     <br>
     <h1 class="text-right time">
     {{dttot(time)}}
