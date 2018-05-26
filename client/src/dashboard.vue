@@ -34,7 +34,7 @@ h1.time {
                     <b-button @click="checkpoint()" block size="lg" variant="primary">&#10003;&bull;</b-button>
                 </div>
                 <div class="col">
-                    <b-button @click="diy_checkpoint()" size="lg" variant="success">DIY &#10003;&bull;</b-button>
+                    <b-button @click="diy_checkpoint()" block size="lg" variant="success">DIY &#10003;&bull;</b-button>
                 </div>
                 <div class="col">
                     <b-button variant="default" block size="lg" v-b-modal.addTimeModal>+ Time</b-button>
