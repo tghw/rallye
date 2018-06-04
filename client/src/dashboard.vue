@@ -11,7 +11,7 @@ h1.time {
 </style>
 
 <template>
-<div>
+<div @mousedown="startVideo">
     <br>
     <h1 class="text-right time">
     {{dttot(time)}}
@@ -415,6 +415,9 @@ export default {
         },
         updateCode() {
             this.$http.post('/restart');
+        },
+        startVideo() {
+            this.$refs.video.play();
         },
     },
     mounted() {

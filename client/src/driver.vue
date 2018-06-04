@@ -8,7 +8,7 @@ h1.time {
 </style>
 
 <template>
-<div class="big">
+<div class="big" @mousedown="startVideo">
     <p class="text-center time">
     {{dttot(time)}}
     </p>
@@ -154,65 +154,8 @@ export default {
             }
             return time_out;
         },
-        editTimeOut(e) {
-            e.preventDefault();
-            var time_out = this.parseTimeOut(this.$refs.editTimeOut.localValue);
-            this.$http.put(`/api/leg/${this.leg.id}`, JSON.stringify({time_out: time_out.format('YYYY-MM-DDTHH:mm:ss')})).then(() => {
-                this.$refs.editTimeOutModal.hide();
-            });
-        },
-        beginTransit(e) {
-            e.preventDefault();
-            var mins = parseInt(this.$refs.transitTime.localValue);
-            var transit = (this.leg.transit || 0) + mins * 60;
-            if (this.cast) {
-                this.$http.put(`/api/cast/${this.cast.id}`, JSON.stringify({dt_end: 'CURRENT_TIMESTAMP'}));
-            }
-            this.$http.put(`/api/leg/${this.leg.id}`, JSON.stringify({transit: transit})).then(() => {
-                this.$refs.transitModal.hide();
-            });
-        },
-        addTime(e) {
-            e.preventDefault();
-            var mins = parseInt(this.$refs.addTime.localValue);
-            this.pause(mins * 60, true);
-        },
-        pause(sec, hide) {
-            if (sec > 0) {
-                var transit = (this.leg.transit || 0) + sec;
-                this.addingTime = true;
-                this.$http.put(`/api/leg/${this.leg.id}`, JSON.stringify({transit: transit})).then(() => {
-                    this.addingTime = false;
-                    if (hide) {
-                        this.$refs.addTimeModal.hide();
-                    }
-                });
-            }
-            else if (hide) {
-                    this.$refs.addTimeModal.hide();
-            }
-        },
-        errorStart() {
-            this.$refs.errorModal.show();
-        },
-        errorTurnAround() {
-            this.$http.post('/error/turnaround');
-        },
-        errorOnCourse() {
-            this.$http.post('/error/oncourse');
-            this.$refs.errorModal.hide();
-        },
-        errorManualDistance() {
-            this.$http.post('/error/manual', JSON.stringify({'distance': parseFloat(this.$refs.errorMiles.localValue)}));
-            this.$refs.errorModal.hide();
-        },
-        calibrate() {
-            var pulses = this.last_leg.pulses;
-            var miles = this.$refs.calibrationMiles.localValue;
-            this.$http.post('/calibrate', JSON.stringify({miles: miles, pulses: pulses}));
-        },
-        reset() {
-            this.$http.post('/reset');
+        startVideo() {
+            this.$refs.video.play();
         },
     },
     mounted() {
