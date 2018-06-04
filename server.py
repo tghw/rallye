@@ -333,8 +333,12 @@ def reset():
 
 @app.route('/restart', methods=['POST'])
 def restart():
-    subprocess.call(['/home/pi/code/rallye/update.sh'])
-    return 'OK'
+    proc = subprocess.Popen(['/home/pi/code/rallye/update.sh'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = proc.communicate()
+    if err:
+        return err, 500
+    else:
+        return out
 
 @app.route('/driver')
 def driver():
