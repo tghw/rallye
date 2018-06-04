@@ -16,10 +16,12 @@ module.exports = {
         rules: [
             {
                 test: /\.vue$/,
+                include: path.resolve(__dirname, 'client/src'),
                 loader: 'vue-loader'
             },
             {
                 test: /\.js$/,
+                include: path.resolve(__dirname, 'client/src'),
                 loader: 'babel-loader'
             },
             {
