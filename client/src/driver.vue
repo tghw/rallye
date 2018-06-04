@@ -9,21 +9,21 @@ h1.time {
 
 <template>
 <div class="big">
-    <br>
-    <h1 class="text-right time">
+    <p class="text-center time">
     {{dttot(time)}}
-    </h1>
-    <div class="row text-center">
+    </p>
+    <div class="row text-center" v-if="leg">
         <div class="col">
             CAST<br>{{num(cast.cast)}}
         </div>
         <div class="col">
-            Average<br><span :class="cast.cast > cast.speed ? 'text-danger' : 'text-success'">{{num(cast.speed)}}</span>
-        </div>
-        <div class="col">
             Current<br>{{num(current_speed)}}
         </div>
+        <div class="col">
+            Difference<br><span :class="leg.current > leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(leg.current - leg.perfect) || 0}}</span>
+        </div>
     </div>
+    <hr>
     <div class="row text-center mt-4" v-if="leg">
         <div class="col">
             Perfect<br>{{stom(leg.perfect)}}
@@ -32,20 +32,22 @@ h1.time {
             Elapsed<br>{{stom(leg.current)}}
         </div>
         <div class="col">
-            Difference<br><span :class="leg.current > leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(leg.current - leg.perfect)}}</span>
-        </div>
-    </div>
-    <div class="row text-center mt-4" v-if="leg">
-        <div class="col">
-            CAST Distance<br>{{num(cast.distance)}}
-        </div>
-        <div class="col">
-            Leg Distance<br>{{num(leg.distance)}}
-        </div>
-        <div class="col">
             Time Out<br>{{dttot(leg.time_out)}}
         </div>
     </div>
+    <hr>
+    <div class="row text-center mt-4" v-if="leg">
+        <div class="col">
+            CAST Dist<br>{{num(cast.distance)}}
+        </div>
+        <div class="col">
+            Leg Dist<br>{{num(leg.distance)}}
+        </div>
+    </div>
+    <video loop ref="video">
+        <source :src="mp4Source" type="video/mp4" />
+        <source :src="webmSource" type="video/webm" />
+    </video>
 </div>
 </template>
 
@@ -65,6 +67,8 @@ export default {
             error: null,
             calibrationMiles: 0,
             updateInterval: null,
+            webmSource: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=',
+            mp4Source: 'data:video/mp4;base64,AAAAHGZ0eXBpc29tAAACAGlzb21pc28ybXA0MQAAAAhmcmVlAAAAG21kYXQAAAGzABAHAAABthADAowdbb9/AAAC6W1vb3YAAABsbXZoZAAAAAB8JbCAfCWwgAAAA+gAAAAAAAEAAAEAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAIVdHJhawAAAFx0a2hkAAAAD3wlsIB8JbCAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAQAAAAAAIAAAACAAAAAABsW1kaWEAAAAgbWRoZAAAAAB8JbCAfCWwgAAAA+gAAAAAVcQAAAAAAC1oZGxyAAAAAAAAAAB2aWRlAAAAAAAAAAAAAAAAVmlkZW9IYW5kbGVyAAAAAVxtaW5mAAAAFHZtaGQAAAABAAAAAAAAAAAAAAAkZGluZgAAABxkcmVmAAAAAAAAAAEAAAAMdXJsIAAAAAEAAAEcc3RibAAAALhzdHNkAAAAAAAAAAEAAACobXA0dgAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAIAAgASAAAAEgAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABj//wAAAFJlc2RzAAAAAANEAAEABDwgEQAAAAADDUAAAAAABS0AAAGwAQAAAbWJEwAAAQAAAAEgAMSNiB9FAEQBFGMAAAGyTGF2YzUyLjg3LjQGAQIAAAAYc3R0cwAAAAAAAAABAAAAAQAAAAAAAAAcc3RzYwAAAAAAAAABAAAAAQAAAAEAAAABAAAAFHN0c3oAAAAAAAAAEwAAAAEAAAAUc3RjbwAAAAAAAAABAAAALAAAAGB1ZHRhAAAAWG1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAAK2lsc3QAAAAjqXRvbwAAABtkYXRhAAAAAQAAAABMYXZmNTIuNzguMw==',
         };
     },
     computed: {
@@ -215,6 +219,7 @@ export default {
         this.update();
         this.updateInterval = setInterval(this.update, 1000);
         this.$moment.tz.setDefault('UTC');
+        this.$refs.video.play();
     },
     beforeDestroy() {
         if (this.updateInterval) {
