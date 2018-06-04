@@ -3,7 +3,7 @@ h1.time {
     font-family: monospace;
 }
 .big {
-    font-size: 2em;
+    font-size: 2.4em;
 }
 </style>
 
@@ -21,7 +21,7 @@ h1.time {
             Average<br><span :class="cast.cast > cast.speed ? 'text-danger' : 'text-success'">{{num(cast.speed)}}</span>
         </div>
         <div class="col">
-            Current<br>{{num(cast.current_speed)}}
+            Current<br>{{num(current_speed)}}
         </div>
     </div>
     <div class="row text-center mt-4" v-if="leg">
@@ -59,12 +59,12 @@ export default {
             last_leg: {},
             cast: {},
             time: new Date(),
+            current_speed: 0,
             addingTime: false,
             diy: {},
             error: null,
             calibrationMiles: 0,
             updateInterval: null,
-            timeInterval: null,
         };
     },
     computed: {
@@ -101,6 +101,8 @@ export default {
                 this.leg = resp.body.leg || {};
                 this.cast = resp.body.cast || {};
                 this.error = resp.body.error;
+                this.time = resp.body.time;
+                this.current_speed = resp.body.current_speed;
             });
         },
         checkpoint() {
@@ -212,17 +214,12 @@ export default {
     mounted() {
         this.update();
         this.updateInterval = setInterval(this.update, 1000);
-        this.timeInterval = setInterval(() => this.time = new Date(), 50);
         this.$moment.tz.setDefault('UTC');
     },
     beforeDestroy() {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
-        }
-        if (this.timeInterval) {
-            clearInterval(this.timeInterval);
-            this.timeInterval = null;
         }
     },
 };

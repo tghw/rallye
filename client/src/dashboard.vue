@@ -1,6 +1,12 @@
 <style>
+body {
+    font-size: 1.4em;
+}
 h1.time {
     font-family: monospace;
+}
+#legsModal {
+    font-size: 14px;
 }
 </style>
 
@@ -31,10 +37,7 @@ h1.time {
                     Time Out<br>{{dttot(leg.time_out)}}<br><b-button v-b-modal.editTimeOutModal variant="link">Edit</b-button>
                 </div>
                 <div class="col">
-                    <b-button @click="checkpoint()" block size="lg" variant="primary">&#10003;&bull;</b-button>
-                </div>
-                <div class="col">
-                    <b-button @click="diy_checkpoint()" block size="lg" variant="success">DIY &#10003;&bull;</b-button>
+                    <b-button block size="lg" variant="primary" v-b-modal.checkPointModal>&#10003;&bull;</b-button>
                 </div>
                 <div class="col">
                     <b-button variant="default" block size="lg" v-b-modal.addTimeModal>+ Time</b-button>
@@ -70,7 +73,7 @@ h1.time {
                             Average<br><span :class="cast.cast > cast.speed ? 'text-danger' : 'text-success'">{{num(cast.speed)}}</span>
                         </div>
                         <div class="col">
-                            Current<br>{{num(cast.current_speed)}}
+                            Current<br>{{num(current_speed)}}
                         </div>
                         <div class="col">
                             Distance<br>{{num(cast.distance)}}
@@ -145,38 +148,41 @@ h1.time {
             <b-col><b-button variant="default" block @click="pause(45)" :disabled="addingTime">45 Sec</b-button></b-col>
         </b-row>
     </b-modal>
-    <b-modal id="checkPointModal" ref="checkPointModal" title="Checkpoint" ok-only>
-        <div class="text-center">
-            <h3>Time Out</h3>
-            <p v-if="last_leg.time_out">{{dttot(last_leg.time_out)}}</p>
-            <p v-else>Calculating...</p>
-            <h3>Time In</h3>
-            <p v-if="last_leg.time_in">{{dttot(last_leg.time_in)}}</p>
-            <p v-else>Calculating...</p>
-            <h3>Elapsed</h3>
-            <p v-if="last_leg.current">{{stom(last_leg.current)}}</p>
-            <p v-else>Calculating...</p>
-            <h3>Perfect</h3>
-            <p v-if="last_leg.perfect">{{stom(last_leg.perfect)}}</p>
-            <p v-else>Calculating...</p>
-            <h3>Difference</h3>
-            <p v-if="last_leg.perfect">
-                <span :class="last_leg.current > last_leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(last_leg.current - last_leg.perfect)}}</span>
-            </p>
-            <p v-else>Calculating...</p>
-            <p>
-                <b-button variant="default" v-b-modal.calibrateModal>Calibrate</b-button>
-            </p>
-        </div>
-    </b-modal>
-    <b-modal id="diyCheckPointModal" ref="diyCheckPointModal" title="DIY Checkpoint" ok-only>
-        <div class="text-center">
-            <h3>Time In (Perfect)</h3>
-            <p v-if="diy.time_in">{{dttot(diy.time_in)}}</p>
-            <p v-else>Calculating...</p>
-            <h3>Time Out</h3>
-            <p v-if="diy.time_out">{{dttot(diy.time_out)}}</p>
-            <p v-else>Calculating...</p>
+    <b-modal id="checkPointModal" ref="checkPointModal" title="Check Point" ok-only @show="clearLastLeg">
+        <div>
+            <div class="text-center" v-if="last_leg">
+                <h3>Time Out</h3>
+                <p v-if="last_leg.time_out">{{dttot(last_leg.time_out)}}</p>
+                <p v-else>Calculating...</p>
+                <h3>Time In</h3>
+                <p v-if="last_leg.time_in">{{dttot(last_leg.time_in)}}</p>
+                <p v-else>Calculating...</p>
+                <h3>Perfect Time In</h3>
+                <p v-if="last_leg.time_in">{{dttot(last_leg.perfect_time_in)}}</p>
+                <p v-else>Calculating...</p>
+                <h3>Elapsed</h3>
+                <p v-if="last_leg.current">{{stom(last_leg.current)}}</p>
+                <p v-else>Calculating...</p>
+                <h3>Perfect</h3>
+                <p v-if="last_leg.perfect">{{stom(last_leg.perfect)}}</p>
+                <p v-else>Calculating...</p>
+                <h3>Difference</h3>
+                <p v-if="last_leg.perfect">
+                    <span :class="last_leg.current > last_leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(last_leg.current - last_leg.perfect)}}</span>
+                </p>
+                <p v-else>Calculating...</p>
+                <p>
+                    <b-button variant="default" v-b-modal.calibrateModal>Calibrate</b-button>
+                </p>
+            </div>
+            <div class="row" v-else>
+                <div class="col">
+                    <b-button variant="primary" block size="lg" @click="checkpoint">&#10003;&bull;</b-button>
+                </div>
+                <div class="col">
+                    <b-button variant="success" block size="lg" @click="diy_checkpoint">DIY &#10003;&bull;</b-button>
+                </div>
+            </div>
         </div>
     </b-modal>
     <b-modal id="errorModal" ref="errorModal" title="Error" hide-footer>
@@ -195,7 +201,7 @@ h1.time {
             </b-col>
         </b-row>
     </b-modal>
-    <b-modal id="calibrateModal" ref="calibrateModal" @ok="calibrate">
+    <b-modal id="calibrateModal" ref="calibrateModal" @ok="calibrate" v-if="last_leg">
         <h5>Measured</h5>
         <p>
             Miles: {{last_leg.distance}}
@@ -215,11 +221,22 @@ h1.time {
     </b-modal>
     <b-modal id="settingsModal" ref="settingsModal" ok-only>
         <router-link to="/driver" class="btn btn-success btn-block">Driver</router-link>
-        <b-button variant="primary" block v-b-modal.calibrateModal>Calibrate</b-button>
+        <b-button variant="primary" block v-b-modal.legsModal>Legs</b-button>
+        <b-button variant="warning" block v-b-modal.calibrateModal>Calibrate</b-button>
+        <b-button variant="secondary" block @click="updateCode">Update</b-button>
         <b-button variant="danger" block v-b-modal.resetModal>Reset</b-button>
     </b-modal>
     <b-modal id="resetModal" ref="resetModal" @ok="reset" ok-title="Reset">
         Are you sure you want to reset?
+    </b-modal>
+    <b-modal size="lg" id="legsModal" ref="legsModal" ok-only @show="getLegs">
+        <b-table striped hover :items="legs" :fields="['leg', 'time_out', 'time_in', 'elapsed', 'perfect']">
+            <template slot="leg" slot-scope="data">{{data.index + 1}}</template>
+            <template slot="time_out" slot-scope="data">{{dttot(data.item.time_out)}}</template>
+            <template slot="time_in" slot-scope="data">{{dttot(data.item.time_in)}}</template>
+            <template slot="elapsed" slot-scope="data">{{stom(data.item.current)}}</template>
+            <template slot="perfect" slot-scope="data">{{stom(data.item.perfect)}}</template>
+        </b-table>
     </b-modal>
 </div>
 </template>
@@ -231,15 +248,16 @@ export default {
     data() {
         return {
             leg: {},
-            last_leg: {},
+            last_leg: null,
+            legs: [],
             cast: {},
             time: new Date(),
+            current_speed: 0,
             addingTime: false,
             diy: {},
             error: null,
             calibrationMiles: 0,
             updateInterval: null,
-            timeInterval: null,
         };
     },
     computed: {
@@ -271,25 +289,28 @@ export default {
             }
             return neg + parseInt(Math.round(x) / 60) + ':' + this.zpad(parseInt(Math.round(x) % 60));
         },
+        getLegs() {
+            this.$http.get('/api/leg').then((resp) => {
+                this.legs = resp.body.objects;
+            });
+        },
         update() {
             this.$http.get('/update').then((resp) => {
                 this.leg = resp.body.leg;
                 this.cast = resp.body.cast;
                 this.error = resp.body.error;
+                this.time = resp.body.time;
+                this.current_speed = resp.body.current_speed;
             });
         },
         checkpoint() {
-            this.last_leg = {};
-            this.$refs.checkPointModal.show();
             this.$http.post('/checkpoint').then((resp) => {
                 this.last_leg = resp.body;
             });
         },
         diy_checkpoint() {
-            this.diy = {};
-            this.$refs.diyCheckPointModal.show();
             this.$http.post('/diy_checkpoint').then((resp) => {
-                this.diy = resp.body;
+                this.last_leg = resp.body;
             });
         },
         start_leg() {
@@ -383,21 +404,22 @@ export default {
         reset() {
             this.$http.post('/reset');
         },
+        clearLastLeg() {
+            this.last_leg = null;
+        },
+        updateCode() {
+            this.$http.post('/restart');
+        },
     },
     mounted() {
         this.update();
         this.updateInterval = setInterval(this.update, 1000);
-        this.timeInterval = setInterval(() => this.time = new Date(), 50);
         this.$moment.tz.setDefault('UTC');
     },
     beforeDestroy() {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
-        }
-        if (this.timeInterval) {
-            clearInterval(this.timeInterval);
-            this.timeInterval = null;
         }
     },
 };

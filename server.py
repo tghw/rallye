@@ -1,3 +1,4 @@
+import os
 import json
 from datetime import datetime, timedelta
 from flask import Flask, request, render_template, redirect, send_from_directory
@@ -10,8 +11,11 @@ import flask_restless
 DIY_MINUTES = 2
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.126/rallye'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@localhost/rallye'
+if os.name == 'nt':
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.126/rallye'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.43.207/rallye'
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@localhost/rallye'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -41,7 +45,7 @@ class Count(db.Model):
 
     @staticmethod
     def current_speed():
-        samples = 3
+        samples = 1
         cs = db.session.query(Count).order_by(Count.dt.desc()).limit(samples + 1).all()
         ppm = Calibration.ppm()
         l = []
@@ -64,7 +68,7 @@ class Leg(db.Model):
     transit = db.Column(db.Integer, nullable=True)
 
     def as_dict(self):
-        return {name: getattr(self, name) for name in ([c.name for c in self.__table__.columns] + ['distance', 'perfect', 'current'])}
+        return {name: getattr(self, name) for name in ([c.name for c in self.__table__.columns] + ['distance', 'perfect', 'current', 'perfect_time_in'])}
 
     @property
     def distance(self):
@@ -73,6 +77,10 @@ class Leg(db.Model):
     @property
     def perfect(self):
         return sum([c.perfect for c in self.casts]) + (self.transit or 0)
+
+    @property
+    def perfect_time_in(self):
+        return self.time_out + timedelta(seconds=self.perfect)
 
     @property
     def current(self):
@@ -94,7 +102,7 @@ class Cast(db.Model):
     pulses = db.Column(db.Integer, nullable=False, default=0)
 
     def as_dict(self):
-        return {name: getattr(self, name) for name in ([c.name for c in self.__table__.columns] + ['distance', 'perfect', 'current', 'speed', 'current_speed', 'start'])}
+        return {name: getattr(self, name) for name in ([c.name for c in self.__table__.columns] + ['distance', 'perfect', 'current', 'speed', 'start'])}
 
     @property
     def perfect(self):
@@ -116,11 +124,6 @@ class Cast(db.Model):
         if not self.current:
             return 0.0
         return self.distance * 3600.0 / self.current
-
-    @property
-    def current_speed(self):
-        return Count.current_speed()
-
 
     @property
     def start(self):
@@ -194,8 +197,8 @@ if not calibration:
 db.session.commit()
 
 manager = flask_restless.APIManager(app, flask_sqlalchemy_db=db)
-manager.create_api(Leg, methods=['GET', 'POST', 'PUT', 'DELETE'], include_methods=['distance', 'perfect', 'current'])
-manager.create_api(Cast, methods=['GET', 'POST', 'PUT', 'DELETE'], include_methods=['perfect', 'current', 'distance', 'speed', 'current_speed',])
+manager.create_api(Leg, methods=['GET', 'POST', 'PUT', 'DELETE'], include_methods=['distance', 'perfect', 'current', 'perfect_time_in',])
+manager.create_api(Cast, methods=['GET', 'POST', 'PUT', 'DELETE'], include_methods=['perfect', 'current', 'distance', 'speed',])
 manager.create_api(Error, methods=['GET', 'POST', 'PUT'])
 manager.create_api(Calibration, methods=['GET', 'PUT'])
 
@@ -211,7 +214,14 @@ def update_data():
     error = Error.current_error()
     if error:
         error = error.as_dict()
-    return json.dumps({'leg': leg, 'cast': cast, 'error': error}, default=str), 200, {'Content-Type': 'application/json'}
+    data = {
+        'leg': leg,
+        'cast': cast,
+        'error': error,
+        'current_speed': Count.current_speed(),
+        'time': datetime.utcnow(),
+    }
+    return json.dumps(data, default=str), 200, {'Content-Type': 'application/json'}
 
 @app.route('/new_cast', methods=['POST'])
 def new_cast():
@@ -285,7 +295,7 @@ def diy_checkpoint():
     db.session.commit()
     db.session.refresh(new_leg)
     db.session.commit()
-    return json.dumps({'time_in': leg.time_in, 'time_out': time_out}, default=str), 200, {'Content-Type': 'application/json'}
+    return redirect('/api/leg/%d' % leg.id)
 
 @app.route('/leg/current')
 def current_leg():
@@ -318,6 +328,11 @@ def reset():
     db.session.query(Leg).delete()
     db.session.query(Error).delete()
     db.session.commit()
+    return 'OK'
+
+@app.route('/restart', methods=['POST'])
+def restart():
+    subprocess.call(['/home/pi/code/rallye/update.sh'])
     return 'OK'
 
 @app.route('/driver')
