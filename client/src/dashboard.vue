@@ -238,7 +238,7 @@ h1.time {
             <template slot="perfect" slot-scope="data">{{stom(data.item.perfect)}}</template>
         </b-table>
     </b-modal>
-    <video loop ref="video">
+    <video loop ref="video" autoplay="autoplay">
         <source :src="mp4Source" type="video/mp4" />
         <source :src="webmSource" type="video/webm" />
     </video>

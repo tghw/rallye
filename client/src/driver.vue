@@ -44,7 +44,7 @@ h1.time {
             Leg Dist<br>{{num(leg.distance)}}
         </div>
     </div>
-    <video loop ref="video">
+    <video loop ref="video" autoplay="autoplay">
         <source :src="mp4Source" type="video/mp4" />
         <source :src="webmSource" type="video/webm" />
     </video>
