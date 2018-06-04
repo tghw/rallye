@@ -415,6 +415,8 @@ export default {
         },
         updateCode() {
             this.$http.post('/restart');
+            this.$refs.settingsModal.hide();
+            setTimeout(() => { window.location.reload(); }, 2000);
         },
         startVideo() {
             this.$refs.video.play();
