@@ -14,7 +14,7 @@ DIY_MINUTES = 2
 app = Flask(__name__)
 if os.name == 'nt':
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.126/rallye'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.43.207/rallye'
+    #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.43.207/rallye'
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@localhost/rallye'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -320,7 +320,7 @@ def calibrate():
 
 @app.route('/s/<path:path>')
 def static_files(path):
-    return send_from_directory('client/dist', path)
+    return send_from_directory('client/dist', path, add_etags=False, cache_timeout=5)
 
 @app.route('/reset', methods=['POST'])
 def reset():

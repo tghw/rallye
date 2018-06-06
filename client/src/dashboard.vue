@@ -5,42 +5,53 @@ body {
 h1.time {
     font-family: monospace;
 }
+
 #legsModal {
     font-size: 14px;
+}
+.dashboard {
+    font-size: 1.5em;
+}
+.btn, input.form-control {
+    font-size: 1em;
 }
 </style>
 
 <template>
-<div @mousedown="startVideo">
+<div class="dashboard">
     <br>
     <h1 class="text-right time">
     {{dttot(time)}}
-    <b-button variant="default" v-b-modal.settingsModal>&#x2699;</b-button>
+    <b-button variant="default" v-b-modal.settingsModal>&nbsp;&#x2699;&nbsp;</b-button>
     </h1>
     <div class="card">
         <div class="card-header"><h2>Current Leg</h2></div>
         <div class="card-body">
-            <div class="row text-center" v-if="leg">
-                <div class="col">
-                    Perfect<br>{{stom(leg.perfect)}}
+            <div v-if="leg">
+                <div class="row text-center">
+                    <div class="col">
+                        Perfect<br>{{stom(leg.perfect)}}
+                    </div>
+                    <div class="col">
+                        Elapsed<br>{{stom(leg.current)}}
+                    </div>
+                    <div class="col">
+                        Difference<br><span :class="leg.current > leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(leg.current - leg.perfect)}}</span>
+                    </div>
+                    <div class="col">
+                        Distance<br>{{num(leg.distance)}}
+                    </div>
+                    <div class="col">
+                        Time Out<br>{{dttot(leg.time_out)}}<br><b-button v-b-modal.editTimeOutModal variant="link">Edit</b-button>
+                    </div>
                 </div>
-                <div class="col">
-                    Elapsed<br>{{stom(leg.current)}}
-                </div>
-                <div class="col">
-                    Difference<br><span :class="leg.current > leg.perfect ? 'text-danger' : 'text-success'">{{Math.round(leg.current - leg.perfect)}}</span>
-                </div>
-                <div class="col">
-                    Distance<br>{{num(leg.distance)}}
-                </div>
-                <div class="col">
-                    Time Out<br>{{dttot(leg.time_out)}}<br><b-button v-b-modal.editTimeOutModal variant="link">Edit</b-button>
-                </div>
-                <div class="col">
-                    <b-button block size="lg" variant="primary" v-b-modal.checkPointModal>&#10003;&bull;</b-button>
-                </div>
-                <div class="col">
-                    <b-button variant="default" block size="lg" v-b-modal.addTimeModal>+ Time</b-button>
+                <div class="row">
+                    <div class="col">
+                        <b-button block size="lg" variant="primary" v-b-modal.checkPointModal>&#10003;&bull;</b-button>
+                    </div>
+                    <div class="col">
+                        <b-button variant="default" block size="lg" v-b-modal.addTimeModal>+ Time</b-button>
+                    </div>
                 </div>
             </div>
             <div class="row" v-else>
@@ -57,9 +68,8 @@ h1.time {
             </div>
         </div>
     </div>
-    <br>
-    <div class="row">
-        <div class="col-8">
+    <div class="row mt-4">
+        <div class="col">
             <div class="card">
                 <div class="card-header">
                     <h2>Current CAST</h2>
@@ -90,11 +100,13 @@ h1.time {
                 </div>
             </div>
         </div>
-        <div class="col-4">
+    </div>
+    <div class="row mt-4">
+        <div class="col">
             <div class="card">
                 <div class="card-header">
-                    <h2>Next CAST</h2>
-                    <span class="pull-right">
+                    <h2 class="float-left">Next CAST</h2>
+                    <span class="float-right">
                     <b-button variant="default" v-b-modal.transitModal>Begin Transit</b-button>
                     </span>
                 </div>
@@ -133,19 +145,22 @@ h1.time {
         <p>Transit will begin when you press OK</p>
         <b-form-input type="number" placeholder="Transit (MM)" ref="transitTime" autofocus="autofocus" />
     </b-modal>
-    <b-modal id="addTimeModal" ref="addTimeModal" title="Add Time" @ok="addTime">
+    <b-modal id="addTimeModal" ref="addTimeModal" title="Add Time" @ok="addTime" @show="clearAddedTime">
         <b-form-input type="number" placeholder="Time (mins)" ref="addTime" autofocus="autofocus" />
-        <br>
-        <b-row>
+        <b-row class="mt-4">
             <b-col><b-button variant="default" block @click="pause(5)" :disabled="addingTime">5 Sec</b-button></b-col>
             <b-col><b-button variant="default" block @click="pause(10)" :disabled="addingTime">10 Sec</b-button></b-col>
             <b-col><b-button variant="default" block @click="pause(15)" :disabled="addingTime">15 Sec</b-button></b-col>
         </b-row>
-        <br>
-        <b-row>
+        <b-row class="mt-4">
             <b-col><b-button variant="default" block @click="pause(20)" :disabled="addingTime">20 Sec</b-button></b-col>
             <b-col><b-button variant="default" block @click="pause(30)" :disabled="addingTime">30 Sec</b-button></b-col>
             <b-col><b-button variant="default" block @click="pause(45)" :disabled="addingTime">45 Sec</b-button></b-col>
+        </b-row>
+        <b-row>
+            <b-col>
+                <b-alert variant="info" :show="secondsAdded!=0" class="mt-4">{{secondsAdded}} Seconds Added</b-alert>
+            </b-col>
         </b-row>
     </b-modal>
     <b-modal id="checkPointModal" ref="checkPointModal" title="Check Point" ok-only @show="clearLastLeg">
@@ -260,6 +275,7 @@ export default {
             addingTime: false,
             diy: {},
             error: null,
+            secondsAdded: 0,
             calibrationMiles: 0,
             updateInterval: null,
             webmSource: 'data:video/webm;base64,GkXfo0AgQoaBAUL3gQFC8oEEQvOBCEKCQAR3ZWJtQoeBAkKFgQIYU4BnQI0VSalmQCgq17FAAw9CQE2AQAZ3aGFtbXlXQUAGd2hhbW15RIlACECPQAAAAAAAFlSua0AxrkAu14EBY8WBAZyBACK1nEADdW5khkAFVl9WUDglhohAA1ZQOIOBAeBABrCBCLqBCB9DtnVAIueBAKNAHIEAAIAwAQCdASoIAAgAAUAmJaQAA3AA/vz0AAA=',
@@ -378,6 +394,7 @@ export default {
                 var transit = (this.leg.transit || 0) + sec;
                 this.addingTime = true;
                 this.$http.put(`/api/leg/${this.leg.id}`, JSON.stringify({transit: transit})).then(() => {
+                    this.secondsAdded += sec;
                     this.addingTime = false;
                     if (hide) {
                         this.$refs.addTimeModal.hide();
@@ -420,6 +437,9 @@ export default {
         },
         startVideo() {
             this.$refs.video.play();
+        },
+        clearAddedTime() {
+           this.secondsAdded = 0;
         },
     },
     mounted() {
