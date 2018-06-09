@@ -319,7 +319,6 @@ export default {
         update() {
             this.$http.get('/update').then((resp) => {
                 this.leg = resp.body.leg;
-                this.last_leg = resp.body.leg;
                 this.cast = resp.body.cast;
                 this.error = resp.body.error;
                 this.time = resp.body.time;

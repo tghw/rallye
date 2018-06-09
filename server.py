@@ -13,8 +13,8 @@ DIY_MINUTES = 2
 
 app = Flask(__name__)
 if os.name == 'nt':
-    #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.126/rallye'
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.43.207/rallye'
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.1.126/rallye'
+    #app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@192.168.43.207/rallye'
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://rallye:rallye@localhost/rallye'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
