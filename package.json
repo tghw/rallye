@@ -21,7 +21,7 @@
     "less-loader": "^4.1.0",
     "moment": "^2.22.1",
     "moment-timezone": "^0.5.16",
-    "underscore": "^1.9.0",
+    "underscore": "^1.12.1",
     "vue": "^2.5.16",
     "vue-loader": "^15.0.9",
     "vue-moment": "^3.2.0",
