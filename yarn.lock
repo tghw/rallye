@@ -3599,9 +3599,9 @@ moment-timezone@^0.5.16:
   dependencies:
     moment ">= 2.9.0"
 
-"moment@>= 2.9.0", moment@^2.11.1, moment@^2.22.1:
-  version "2.22.1"
-  resolved "https://registry.yarnpkg.com/moment/-/moment-2.22.1.tgz#529a2e9bf973f259c9643d237fda84de3a26e8ad"
+"moment@>= 2.9.0", moment@^2.19.2, moment@^2.22.1:
+  version "2.29.1"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.29.1.tgz#b2be769fa31940be9eeea6469c075e35006fa3d3"
 
 move-concurrently@^1.0.1:
   version "1.0.1"
@@ -5524,11 +5524,11 @@ vue-loader@^15.0.9:
     vue-hot-reload-api "^2.3.0"
     vue-style-loader "^4.1.0"
 
-vue-moment@^3.2.0:
-  version "3.2.0"
-  resolved "https://registry.yarnpkg.com/vue-moment/-/vue-moment-3.2.0.tgz#28cd2b313831ae83953f646ac4785a2cc724e412"
+vue-moment@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/vue-moment/-/vue-moment-4.1.0.tgz#092a8ff723a96c6f85a0a8e23ad30f0bf320f3b0"
   dependencies:
-    moment "^2.11.1"
+    moment "^2.19.2"
 
 vue-momentjs@^0.1.2:
   version "0.1.2"
